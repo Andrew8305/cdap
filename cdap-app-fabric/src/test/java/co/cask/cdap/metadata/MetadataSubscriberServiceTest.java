@@ -16,38 +16,54 @@
 
 package co.cask.cdap.metadata;
 
+import co.cask.cdap.AppWithWorkflow;
+import co.cask.cdap.api.app.ApplicationSpecification;
 import co.cask.cdap.api.workflow.NodeStatus;
 import co.cask.cdap.api.workflow.Value;
 import co.cask.cdap.api.workflow.WorkflowToken;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.app.RunIds;
 import co.cask.cdap.common.utils.Tasks;
+import co.cask.cdap.config.PreferencesStore;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.metadata.lineage.AccessType;
 import co.cask.cdap.data2.metadata.lineage.DefaultLineageStoreReader;
 import co.cask.cdap.data2.metadata.lineage.LineageStoreReader;
+import co.cask.cdap.data2.metadata.store.MetadataStore;
 import co.cask.cdap.data2.metadata.writer.LineageWriter;
 import co.cask.cdap.data2.metadata.writer.MessagingLineageWriter;
 import co.cask.cdap.data2.registry.BasicUsageRegistry;
 import co.cask.cdap.data2.registry.MessagingUsageWriter;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.registry.UsageWriter;
+import co.cask.cdap.internal.app.deploy.Specifications;
+import co.cask.cdap.internal.app.runtime.SystemArguments;
+import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
+import co.cask.cdap.internal.app.runtime.schedule.trigger.TimeTrigger;
 import co.cask.cdap.internal.app.runtime.workflow.BasicWorkflowToken;
 import co.cask.cdap.internal.app.runtime.workflow.MessagingWorkflowStateWriter;
 import co.cask.cdap.internal.app.runtime.workflow.WorkflowStateWriter;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
 import co.cask.cdap.internal.app.store.DefaultStore;
+import co.cask.cdap.internal.profile.ProfileService;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.WorkflowNodeStateDetail;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.EntityId;
 import co.cask.cdap.proto.id.FlowletId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.NamespacedEntityId;
+import co.cask.cdap.proto.id.ProfileId;
 import co.cask.cdap.proto.id.ProgramId;
 import co.cask.cdap.proto.id.ProgramRunId;
+import co.cask.cdap.proto.id.ScheduleId;
 import co.cask.cdap.proto.id.StreamId;
 import co.cask.cdap.proto.id.WorkflowId;
+import co.cask.cdap.proto.profile.Profile;
+import co.cask.cdap.scheduler.ProgramScheduleService;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -187,6 +203,85 @@ public class MetadataSubscriberServiceTest extends AppFabricTestBase {
         10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
     } finally {
       subscriberService.stopAndWait();
+    }
+  }
+
+  @Test
+  public void testProfileMetadata() throws Exception {
+    Injector injector = getInjector();
+
+    // set default namespace to use the profile, since now MetadataSubscriberService is not started,
+    // it should not affect the mds
+    PreferencesStore preferencesStore = injector.getInstance(PreferencesStore.class);
+    preferencesStore.setProperties(
+      NamespaceId.DEFAULT.getNamespace(), Collections.singletonMap(SystemArguments.PROFILE_NAME, "SYSTEM:default"));
+
+    // add a app with workflow to app meta store
+    ApplicationSpecification appSpec = Specifications.from(new AppWithWorkflow());
+    ApplicationId appId = NamespaceId.DEFAULT.app(appSpec.getName());
+    ProgramId workflowId = appId.workflow("SampleWorkflow");
+    ScheduleId scheduleId = appId.schedule("tsched1");
+    Store store = injector.getInstance(DefaultStore.class);
+    store.addApplication(appId, appSpec);
+
+    // add a schedule to schedule store
+    ProgramScheduleService scheduleService = injector.getInstance(ProgramScheduleService.class);
+    scheduleService.add(new ProgramSchedule("tsched1", "one time schedule", workflowId,
+                                            Collections.emptyMap(),
+                                            new TimeTrigger("* * ? * 1"), ImmutableList.of()));
+
+    // get the mds should be empty property since we haven't started the MetadataSubscriberService
+    MetadataStore mds = injector.getInstance(MetadataStore.class);
+    Assert.assertEquals(Collections.emptyMap(), mds.getProperties(workflowId));
+    Assert.assertEquals(Collections.emptyMap(), mds.getProperties(scheduleId));
+
+    // Start the MetadataSubscriberService
+    MetadataSubscriberService subscriberService = getInjector().getInstance(MetadataSubscriberService.class);
+    subscriberService.startAndWait();
+
+    // add a new profile in default namespace
+    ProfileService profileService = injector.getInstance(ProfileService.class);
+    ProfileId myProfile = new ProfileId(NamespaceId.DEFAULT.getNamespace(), "MyProfile");
+    profileService.saveProfile(myProfile, Profile.DEFAULT);
+
+    try {
+      // Verify the workflow profile metadata is updated to default profile
+      Tasks.waitFor(ProfileId.DEFAULT.toString(), () -> mds.getProperties(workflowId).get("profile"),
+                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+      // Verify the schedule profile metadata is updated to default profile
+      Tasks.waitFor(ProfileId.DEFAULT.toString(), () -> mds.getProperties(scheduleId).get("profile"),
+                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+
+
+      // set default namespace to use my profile
+      preferencesStore.setProperties(
+        NamespaceId.DEFAULT.getNamespace(),
+        Collections.singletonMap(SystemArguments.PROFILE_NAME, "USER:MyProfile"));
+
+      // Verify the workflow profile metadata is updated to my profile
+      Tasks.waitFor(myProfile.toString(), () -> mds.getProperties(workflowId).get("profile"),
+                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+      // Verify the schedule profile metadata is updated to my profile
+      Tasks.waitFor(myProfile.toString(), () -> mds.getProperties(scheduleId).get("profile"),
+                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+
+      // remove the preferences so that no profile setting is there, so default profile will be used
+      preferencesStore.deleteProperties(NamespaceId.DEFAULT.getNamespace());
+
+      // Verify the workflow profile metadata is updated to default profile
+      Tasks.waitFor(ProfileId.DEFAULT.toString(), () -> mds.getProperties(workflowId).get("profile"),
+                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+      // Verify the schedule profile metadata is updated to default profile
+      Tasks.waitFor(ProfileId.DEFAULT.toString(), () -> mds.getProperties(scheduleId).get("profile"),
+                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+    } finally {
+      // stop and clean up the store
+      subscriberService.stopAndWait();
+      preferencesStore.deleteProperties(NamespaceId.DEFAULT.getNamespace());
+      store.removeAllApplications(NamespaceId.DEFAULT);
+      scheduleService.delete(scheduleId);
+      profileService.disableProfile(myProfile);
+      profileService.deleteProfile(myProfile);
     }
   }
 
