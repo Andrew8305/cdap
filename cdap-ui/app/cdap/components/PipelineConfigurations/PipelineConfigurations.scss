@@ -30,6 +30,7 @@ $sidepanel-width: 170px;
   height: $modeless-height;
   top: $top-panel-height;
   right: $right-position;
+  margin-bottom: 60px; // to scroll when the height of the window becomes less than the modeless height. 60px for footer offset.
 
   .pipeline-config-tabs-wrapper {
     height: calc(100% - 60px); // .modeless-header height set at common.less :sigh:

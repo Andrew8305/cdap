@@ -23,6 +23,8 @@ import {setRunError} from 'components/PipelineDetails/store/ActionCreator';
 import {keyValuePairsHaveMissingValues} from 'components/KeyValuePairs/KeyValueStoreActions';
 import PipelineConfigurations from 'components/PipelineConfigurations';
 import {revertConfigsToSavedValues} from 'components/PipelineConfigurations/Store/ActionCreator';
+import Popover from 'components/Popover';
+import classnames from 'classnames';
 import T from 'i18n-react';
 
 const PREFIX = 'features.PipelineDetails.TopPanel';
@@ -37,12 +39,19 @@ export default class PipelineRunButton extends Component {
   }
 
   state = {
-    showConfigModeless: false
+    showConfigModeless: false,
+    showRunOptions: false
   };
 
   toggleConfigModeless = () => {
     this.setState({
       showConfigModeless: !this.state.showConfigModeless
+    });
+  };
+
+  toggleRunConfigOption = (showRunOptions) => {
+    this.setState({
+      showRunOptions
     });
   };
 
@@ -93,11 +102,33 @@ export default class PipelineRunButton extends Component {
     );
   }
 
+  renderRunDropdownBtn = () => {
+    const Btn = (
+      <div className={classnames("btn pipeline-action-btn pipeline-run-btn", {
+        'btn-popover-open': this.state.showRunOptions
+      })}>
+        <IconSVG name="icon-caret-down" />
+      </div>
+    );
+    return (
+      <Popover
+        target={() => Btn}
+        className="arrow-btn-container"
+        placement="bottom-start"
+        bubbleEvent={false}
+        enableInteractionInPopover={true}
+        onTogglePopover={this.toggleRunConfigOption}
+      >
+        <h3> Start ....</h3>
+      </Popover>
+    );
+  };
+
   renderPipelineRunButton() {
     return (
       <div
         onClick={this.runPipelineOrToggleConfig}
-        className="btn pipeline-action-btn pipeline-run-btn"
+        className="btn btn-secondary pipeline-action-btn pipeline-run-btn"
         disabled={this.props.runButtonLoading}
       >
         <div className="btn-container">
@@ -131,6 +162,7 @@ export default class PipelineRunButton extends Component {
     return (
       <div className="pipeline-action-container pipeline-run-container">
         {this.renderRunError()}
+        {this.renderRunDropdownBtn()}
         {this.renderPipelineRunButton()}
         {this.renderConfigModeless()}
       </div>

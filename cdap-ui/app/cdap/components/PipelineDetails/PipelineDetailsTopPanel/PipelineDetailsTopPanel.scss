@@ -80,6 +80,8 @@ $btn-border-color: transparent;
 
   .pipeline-details-buttons {
     height: $top-panel-height;
+    display: flex;
+    align-items: center;
 
     .pipeline-action-container {
       display: inline-block;
@@ -172,15 +174,52 @@ $btn-border-color: transparent;
       }
     }
 
-    .pipeline-run-container {
-      margin-right: 10px;
-    }
-
     .pipeline-run-container,
     .pipeline-stop-container {
       height: 42px;
       border: 1px solid $grey-06;
       border-radius: 5px;
+      display: inline-flex;
+    }
+
+    .pipeline-run-container {
+      margin-right: 10px;
+      .arrow-btn-container {
+        border-top-left-radius: 5px;
+        border-bottom-left-radius: 5px;
+        border-right: 1px solid #ccc;
+        &:hover {
+          background: $grey-07;
+        }
+        > div:first-child {
+          height: 100%;
+        }
+        .pipeline-run-btn {
+          padding: 0;
+          &.btn-popover-open {
+            background: $grey-06;
+          }
+        }
+        .popper {
+          margin-top: 3px;
+          z-index: 1061;
+          > .popper__arrow {
+            display: none;
+            z-index: 1061;
+          }
+        }
+      }
+      .btn.btn-secondary {
+        border: 0;
+        border-radius: 5px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        .btn-container {
+          height: 100%;
+          display: flex;
+          align-items: center;
+        }
+      }
     }
 
     .pipeline-details-container {
