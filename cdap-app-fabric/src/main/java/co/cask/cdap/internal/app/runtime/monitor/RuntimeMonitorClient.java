@@ -31,6 +31,8 @@ import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +56,7 @@ import javax.net.ssl.HttpsURLConnection;
  * Provides client side logic to interact with the network API exposed by {@link RuntimeMonitorServer}.
  */
 public final class RuntimeMonitorClient {
+  private static final Logger LOG = LoggerFactory.getLogger(RuntimeMonitorClient.class);
   private final URI baseURI;
   private final HttpRequestConfig requestConfig;
   private final KeyStore keyStore;
@@ -95,7 +98,7 @@ public final class RuntimeMonitorClient {
       throwIfNotOK(urlConn.getResponseCode(), urlConn);
 
       try (InputStream is = urlConn.getInputStream()) {
-        return decodeResponse(is);
+        return decodeResponse(request, is);
       }
     } catch (ConnectException e) {
       throw new ServiceUnavailableException("runtime.monitor", e);
@@ -111,7 +114,7 @@ public final class RuntimeMonitorClient {
    * @throws IOException if there is any exception while reading from output stream
    */
   private void encodeRequest(Map<String, MonitorConsumeRequest> topicsToRequest,
-                            OutputStream outputStream) throws IOException {
+                             OutputStream outputStream) throws IOException {
     Encoder encoder = EncoderFactory.get().directBinaryEncoder(outputStream, null);
     encoder.writeMapStart();
     encoder.setItemCount(topicsToRequest.size());
@@ -130,30 +133,50 @@ public final class RuntimeMonitorClient {
 
   /**
    * Decodes avro binary response.
+   * @param request list of topics requested
    * @param is input stream to read from
+   * @return Retruns decoded map of messages per topic
    * @throws IOException if there is any exception while reading from input stream
    */
-  private Map<String, Deque<MonitorMessage>> decodeResponse(InputStream is) throws IOException {
+  private Map<String, Deque<MonitorMessage>> decodeResponse(Map<String, MonitorConsumeRequest> request,
+                                                            InputStream is) throws IOException {
     Decoder decoder = DecoderFactory.get().directBinaryDecoder(is, null);
     GenericRecord reuse = new GenericData.Record(MonitorSchemas.V1.MonitorResponse.SCHEMA.getValueType()
                                                    .getElementType());
 
     Map<String, Deque<MonitorMessage>> decodedMessages = new HashMap<>();
-    long entries = decoder.readMapStart();
-    while (entries > 0) {
-      String topicConfig = decoder.readString();
-      if (topicConfig.isEmpty()) {
-        continue;
-      }
+    for (String key : request.keySet()) {
+      decodedMessages.put(key, new LinkedList<>());
+    }
 
-      decodedMessages.put(topicConfig, new LinkedList<>());
-      long messages = decoder.readArrayStart();
-      while (messages > 0) {
-        reuse = responseDatumReader.read(reuse, decoder);
-        decodedMessages.get(topicConfig).add(new MonitorMessage(reuse));
-        messages--;
+    try {
+      long entries = decoder.readMapStart();
+      while (entries > 0) {
+        String topicConfig = decoder.readString();
+        if (topicConfig.isEmpty()) {
+          continue;
+        }
+
+        long messages = decoder.readArrayStart();
+        while (messages > 0) {
+          reuse = responseDatumReader.read(reuse, decoder);
+          decodedMessages.get(topicConfig).add(new MonitorMessage(reuse));
+
+          messages--;
+          if (messages == 0) {
+            messages = decoder.arrayNext();
+          }
+        }
+
+        entries--;
+        if (entries == 0) {
+          entries = decoder.mapNext();
+        }
+
       }
-      entries--;
+    } catch (IOException e) {
+      // catch the exception to process all the decoded messages to avoid refetching them.
+      LOG.error("Error while decoding response from Runtime Server. ", e);
     }
 
     return decodedMessages;

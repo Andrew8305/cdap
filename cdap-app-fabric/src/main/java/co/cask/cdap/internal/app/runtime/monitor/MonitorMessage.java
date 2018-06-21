@@ -29,7 +29,7 @@ public class MonitorMessage {
   private final byte[] message;
 
   public MonitorMessage (GenericRecord record) {
-    this.messageId = String.valueOf(record.get("messageId"));
+    this.messageId = record.get("messageId").toString();
     this.message = Bytes.toBytes((ByteBuffer) record.get("message"));
   }
 

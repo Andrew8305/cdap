@@ -1,7 +1,8 @@
 {
-	"type" : "map",
-	"values" : {
+  "type" : "map",
+  "values" : {
 		"type" : "array",
+		"java-class": "java.util.LinkedList",
 	  	"items" : {
 	    	"type" : "record",
 	    	"name" : "MonitorMessages",
@@ -10,5 +11,5 @@
 	      		{ "name" : "message", "type" : "bytes" }
 	    	]
   		}
-	}
+  }
 }

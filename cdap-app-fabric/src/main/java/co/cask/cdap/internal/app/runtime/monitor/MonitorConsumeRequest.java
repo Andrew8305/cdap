@@ -35,15 +35,6 @@ public class MonitorConsumeRequest {
     this.limit = limit;
   }
 
-  /**
-   * Extracts messageId and limit from {@link GenericRecord} and creates MonitorConsumeRequest from it
-   * @param record Generic record from which fields needs to be extracted
-   */
-  public MonitorConsumeRequest(GenericRecord record) {
-    this.messageId = String.valueOf(record.get("messageId"));
-    this.limit = (int) record.get("limit");
-  }
-
   @Nullable
   public String getMessageId() {
     return messageId;
