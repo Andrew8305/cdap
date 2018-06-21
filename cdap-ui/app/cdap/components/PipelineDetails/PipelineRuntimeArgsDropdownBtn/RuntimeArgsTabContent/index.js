@@ -18,31 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import PipelineConfigurationsStore, {ACTIONS as PipelineConfigurationsActions} from 'components/PipelineConfigurations/Store';
 import {updateKeyValueStore} from 'components/PipelineConfigurations/Store/ActionCreator';
-import {convertKeyValuePairsObjToMap} from 'components/KeyValuePairs/KeyValueStoreActions';
 import {convertMapToKeyValuePairs} from 'services/helpers';
-import RuntimeArgsPairs from 'components/PipelineConfigurations/ConfigurationsContent/RuntimeArgsTabContent/RuntimeArgsPairs';
-import ProvidedPopover from 'components/PipelineConfigurations/ConfigurationsContent/RuntimeArgsTabContent/ProvidedPopover';
+import RuntimeArgsPairs from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RuntimeArgsTabContent/RuntimeArgsPairs';
 import classnames from 'classnames';
 import isEmpty from 'lodash/isEmpty';
 import T from 'i18n-react';
 import {connect} from 'react-redux';
 require('./RuntimeArgsTabContent.scss');
 
-const PREFIX = 'features.PipelineConfigurations.RuntimeArgs';
-
-const toggleAllProvided = (isProvided) => {
-  let runtimeArgs = {...PipelineConfigurationsStore.getState().runtimeArgs};
-  runtimeArgs.pairs.forEach(runtimeArgsPair => {
-    if (runtimeArgsPair.notDeletable) {
-      runtimeArgsPair.provided = isProvided;
-    }
-  });
-  PipelineConfigurationsStore.dispatch({
-    type: PipelineConfigurationsActions.SET_RUNTIME_ARGS,
-    payload: { runtimeArgs }
-  });
-  updateKeyValueStore();
-};
 
 const onPaste = (dataObj, index) => {
   let runtimeArgs = {...PipelineConfigurationsStore.getState().runtimeArgs};
@@ -72,44 +55,11 @@ const onPaste = (dataObj, index) => {
 };
 
 function RuntimeArgsTabContent({isHistoricalRun}) {
-  let runtimeArgs = PipelineConfigurationsStore.getState().runtimeArgs;
-  let runtimeArgsObj = convertKeyValuePairsObjToMap(runtimeArgs);
-  let noRuntimeArgs = isEmpty(runtimeArgsObj);
-
-  let stepContentHeading;
-  if (isHistoricalRun) {
-    if (noRuntimeArgs) {
-      stepContentHeading = (
-        <div className="step-content-heading">
-          {T.translate(`${PREFIX}.contentHeading3`)}
-        </div>
-      );
-    } else {
-      stepContentHeading = (
-        <div className="step-content-heading">
-          {T.translate(`${PREFIX}.contentHeading2`)}
-        </div>
-      );
-    }
-  } else {
-    stepContentHeading = (
-      <div>
-        <div className="step-content-heading">
-          {T.translate(`${PREFIX}.contentHeading1`)}
-        </div>
-        <div className="step-content-subtitle">
-          {T.translate(`${PREFIX}.contentSubtitle`)}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       id="runtime-arguments-tab-content"
       className="configuration-step-content configuration-content-container"
     >
-      {stepContentHeading}
       <div className="runtime-arguments-labels key-value-pair-labels">
         <span className={classnames("key-label", {"wider": isHistoricalRun})}>
           {T.translate('commons.nameLabel')}
@@ -117,10 +67,6 @@ function RuntimeArgsTabContent({isHistoricalRun}) {
         <span className="value-label">
           {T.translate('commons.keyValPairs.valueLabel')}
         </span>
-        <ProvidedPopover
-          toggleAllProvided={toggleAllProvided}
-          disabled={isHistoricalRun}
-        />
       </div>
       <div className="runtime-arguments-values key-value-pair-values">
         <RuntimeArgsPairs

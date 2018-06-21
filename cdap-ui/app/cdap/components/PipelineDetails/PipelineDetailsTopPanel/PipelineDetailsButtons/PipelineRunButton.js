@@ -23,8 +23,7 @@ import {setRunError} from 'components/PipelineDetails/store/ActionCreator';
 import {keyValuePairsHaveMissingValues} from 'components/KeyValuePairs/KeyValueStoreActions';
 import PipelineConfigurations from 'components/PipelineConfigurations';
 import {revertConfigsToSavedValues} from 'components/PipelineConfigurations/Store/ActionCreator';
-import Popover from 'components/Popover';
-import classnames from 'classnames';
+import PipelineRuntimeArgsDropdownBtn from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn';
 import T from 'i18n-react';
 
 const PREFIX = 'features.PipelineDetails.TopPanel';
@@ -103,24 +102,8 @@ export default class PipelineRunButton extends Component {
   }
 
   renderRunDropdownBtn = () => {
-    const Btn = (
-      <div className={classnames("btn pipeline-action-btn pipeline-run-btn", {
-        'btn-popover-open': this.state.showRunOptions
-      })}>
-        <IconSVG name="icon-caret-down" />
-      </div>
-    );
     return (
-      <Popover
-        target={() => Btn}
-        className="arrow-btn-container"
-        placement="bottom-start"
-        bubbleEvent={false}
-        enableInteractionInPopover={true}
-        onTogglePopover={this.toggleRunConfigOption}
-      >
-        <h3> Start ....</h3>
-      </Popover>
+      <PipelineRuntimeArgsDropdownBtn />
     );
   };
 

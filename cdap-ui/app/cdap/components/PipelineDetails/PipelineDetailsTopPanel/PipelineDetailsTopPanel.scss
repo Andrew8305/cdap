@@ -112,7 +112,6 @@ $btn-border-color: transparent;
 
       .pipeline-action-btn {
         height: 100%;
-        padding: 0 10px;
         display: flex;
         align-items: center;
         border-radius: 0;
@@ -184,31 +183,7 @@ $btn-border-color: transparent;
 
     .pipeline-run-container {
       margin-right: 10px;
-      .arrow-btn-container {
-        border-top-left-radius: 5px;
-        border-bottom-left-radius: 5px;
-        border-right: 1px solid #ccc;
-        &:hover {
-          background: $grey-07;
-        }
-        > div:first-child {
-          height: 100%;
-        }
-        .pipeline-run-btn {
-          padding: 0;
-          &.btn-popover-open {
-            background: $grey-06;
-          }
-        }
-        .popper {
-          margin-top: 3px;
-          z-index: 1061;
-          > .popper__arrow {
-            display: none;
-            z-index: 1061;
-          }
-        }
-      }
+      
       .btn.btn-secondary {
         border: 0;
         border-radius: 5px;

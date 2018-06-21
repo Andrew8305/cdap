@@ -14,11 +14,24 @@
  * the License.
 */
 
-import React, {PureComponent} from 'react';
+import React from 'react';
+import AllRuns from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RunTabs/AllRuns';
+import OneRun from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RunTabs/OneRun';
 
-export default class PipelineRuntimeArgs extends PureComponent {
-  render() {
-    return <h4> Start...</h4>;
-  }
-}
-
+const TabConfig = {
+  tabs: [
+    {
+      id: 1,
+      name: 'Set for all runs',
+      content: (<AllRuns />),
+    },
+    {
+      id: 2,
+      name: 'Set for one run',
+      content: (<OneRun />),
+    }
+  ],
+  layout: 'vertical',
+  defaultTab: 1
+};
+export default TabConfig;
