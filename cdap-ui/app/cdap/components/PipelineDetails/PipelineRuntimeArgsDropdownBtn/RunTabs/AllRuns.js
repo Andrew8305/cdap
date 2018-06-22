@@ -19,13 +19,25 @@ import RuntimeArgsTabContent from 'components/PipelineDetails/PipelineRuntimeArg
 
 export default function PipelineRunTimeArgsAllRuns() {
   return (
-    <div>
-      <strong> Set Runtime Arguments for all the future runs of this pipeline. </strong>
+    <div className="runtime-args-tab-wrapper">
       <div>
-        The values you set here, will be used by all the runs of the pipeline that will
-        occur from now until you change the Runtime Arguments.
+        <strong> Set Runtime Arguments for all the future runs of this pipeline. </strong>
+        <div>
+          The values you set here, will be used by all the runs of the pipeline that will
+          occur from now until you change the Runtime Arguments.
+        </div>
       </div>
+
       <RuntimeArgsTabContent />
+
+      <div className="btns-container">
+        <div className="btn btn-primary">
+          Save
+        </div>
+        <div className="btn btn-secondary">
+          Save and Run
+        </div>
+      </div>
     </div>
   );
 }

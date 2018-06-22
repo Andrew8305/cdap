@@ -21,6 +21,9 @@ $input-box-focus-color: #66afe9;
 $input-label-color: $grey-03;
 $action-button-color: $grey-02;
 $regular-font: 14px;
+$key-value-pair-input-height: 32px;
+$key-value-pair-margin: 16px;
+$key-value-pair-visible-number: 5;
 
 #runtime-arguments-tab-content {
   margin-top: 20px;
@@ -31,12 +34,13 @@ $regular-font: 14px;
     }
   }
   .runtime-arguments-labels {
-    .key-label {
-      width: 34%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 62px 100px;
+    grid-gap: 10px;
+    margin-right: -25px;
 
-      &.wider {
-        width: 44%;
-      }
+    &.wider {
+      grid-template-columns: 1.5fr 1.5fr auto 100px;
     }
 
     .provided-label {
@@ -46,6 +50,7 @@ $regular-font: 14px;
     .provided-popover {
       display: inline-block;
       cursor: pointer;
+      margin-right: 5px;
 
       .icon-caret-square-o-down {
         margin-left: 5px;
@@ -62,7 +67,10 @@ $regular-font: 14px;
   .runtime-arguments-values {
     /* 192px = 32px (height of input box) * 4
              + 16px (margin between each boxes) * 4 */
-    max-height: 192px;
+    max-height: calc(
+      #{$key-value-pair-input-height} * #{$key-value-pair-visible-number} +
+      (#{$key-value-pair-margin} * #{$key-value-pair-visible-number})
+    );
     overflow-x: hidden;
     overflow-y: auto;
 

@@ -19,12 +19,16 @@ import RuntimeArgsTabContent from 'components/PipelineDetails/PipelineRuntimeArg
 
 export default function PipelineRunTimeArgsOneRun() {
   return (
-    <div>
-      <strong> Set Runtime Argumnets for one-time use. </strong>
+    <div className="runtime-args-tab-wrapper">
       <div>
-        The values you set here will be used for only one run.
+        <strong> Set Runtime Argumnets for one-time use. </strong>
+        <div>The values you set here will be used for only one run.</div>
       </div>
       <RuntimeArgsTabContent />
+
+      <div className="btns-container">
+        <div className="btn btn-primary">Run</div>
+      </div>
     </div>
   );
 }

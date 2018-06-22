@@ -32,7 +32,7 @@
   > div:first-child {
     height: 100%;
   }
-  .popper {
+  > .popper {
     margin-top: 7px;
     z-index: 1061;
     width: auto;
@@ -40,5 +40,6 @@
       display: none;
       z-index: 1061;
     }
+
   }
 }

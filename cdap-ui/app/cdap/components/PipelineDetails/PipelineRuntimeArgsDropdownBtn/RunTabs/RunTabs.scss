@@ -14,26 +14,14 @@
  * the License.
 */
 
-import React from 'react';
-import AllRuns from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RunTabs/AllRuns';
-import OneRun from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RunTabs/OneRun';
 
-require('./RunTabs.scss');
-
-const TabConfig = {
-  tabs: [
-    {
-      id: 1,
-      name: 'Set for all runs',
-      content: (<AllRuns />),
-    },
-    {
-      id: 2,
-      name: 'Set for one run',
-      content: (<OneRun />),
+.runtime-args-tab-wrapper {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  .btns-container {
+    .btn{
+      margin-right: 10px;
     }
-  ],
-  layout: 'vertical',
-  defaultTab: 1
-};
-export default TabConfig;
+  }
+}

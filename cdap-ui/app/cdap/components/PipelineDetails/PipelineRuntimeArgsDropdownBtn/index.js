@@ -14,8 +14,7 @@
  * the License.
 */
 
-import PropTypes from 'prop-types';
-import React, {PureComponent} from 'react';
+import React, {Component} from 'react';
 import ConfigurableTab from 'components/ConfigurableTab';
 import TabConfig from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RunTabs/TabConfig';
 import IconSVG from 'components/IconSVG';
@@ -23,51 +22,10 @@ import PipelineModeless from 'components/PipelineDetails/PipelineModeless';
 import classnames from 'classnames';
 import Popover from 'components/Popover';
 import {Provider} from 'react-redux';
-import PipelineConfigurationStore from 'components/PipelineConfigurations/Store';
-import {fetchAndUpdateRuntimeArgs} from 'components/PipelineDetails/store/ActionCreator';
+import PipelineConfigurationsStore from 'components/PipelineConfigurations/Store';
 require('./PipelineRuntimeArgsDropdownBtn.scss');
 
-class PipelineRuntimeArgs extends PureComponent {
-  static propTypes = {
-    onClose: PropTypes.func
-  };
-
-  componentDidMount() {
-    fetchAndUpdateRuntimeArgs();
-  }
-
-  renderHeader = () => {
-    return (
-      <div className="modeless-header">
-        <div className="modeless-title">
-          Runtime Arguments
-        </div>
-        <div className="btn-group">
-          <a
-            className="btn"
-            onClick={this.props.onClose}
-          >
-            <IconSVG name="icon-close" />
-          </a>
-        </div>
-      </div>
-    );
-  };
-  render() {
-    return (
-      <Provider store={PipelineConfigurationStore}>
-        <PipelineModeless
-          title="Runtime Arguments"
-          onClose={this.props.onClose}
-        >
-          <ConfigurableTab tabConfig={TabConfig} />
-        </PipelineModeless>
-      </Provider>
-    );
-  }
-}
-
-export default class PipelineRuntimeArgsDropdownBtn extends PureComponent {
+export default class PipelineRuntimeArgsDropdownBtn extends Component {
 
   state = {
     showRunOptions: false
@@ -88,18 +46,24 @@ export default class PipelineRuntimeArgsDropdownBtn extends PureComponent {
       </div>
     );
     return (
-      <Popover
-        target={() => Btn}
-        className="arrow-btn-container"
-        placement="bottom"
-        bubbleEvent={false}
-        enableInteractionInPopover={true}
-        showPopover={this.state.showRunOptions}
-        onTogglePopover={this.toggleRunConfigOption}
-        injectOnToggle={true}
-      >
-        <PipelineRuntimeArgs onClose={this.toggleRunConfigOption} />
-      </Popover>
+      <Provider store={PipelineConfigurationsStore}>
+        <Popover
+          target={() => Btn}
+          className="arrow-btn-container"
+          placement="bottom"
+          enableInteractionInPopover={true}
+          showPopover={this.state.showRunOptions}
+          onTogglePopover={this.toggleRunConfigOption}
+          injectOnToggle={true}
+        >
+          <PipelineModeless
+            title="Runtime Arguments"
+            onClose={this.toggleRunConfigOption}
+          >
+            <ConfigurableTab tabConfig={TabConfig} />
+          </PipelineModeless>
+        </Popover>
+      </Provider>
     );
   }
 }
