@@ -143,8 +143,11 @@ class KeyValuePair extends Component {
       return null;
     }
     return (
+      // FIXME: This is not the right way to do this.
+      // https://issues.cask.co/browse/CDAP-13590
       <span>
         <input
+          key={Math.random()}
           type="checkbox"
           checked={this.props.provided}
           onChange={this.props.onProvided}
