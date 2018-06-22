@@ -26,6 +26,8 @@ public interface FieldLineageWriter {
 
   /**
    * Write the lineage information associated with the given program run.
+   * Its caller's responsibility to wrap the call in transaction, if writing to
+   * the transactional store.
    *
    * @param programRunId run id of the program
    * @param info a {@link FieldLineageInfo} associated with the program.

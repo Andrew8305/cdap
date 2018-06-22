@@ -23,8 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Represents the set of program runs along with the set of field operations
- * performed by each of the program run in that set.
+ * Represents a set of program runs that performed the same set of field operations.
  */
 public class ProgramRunOperations {
   private final long checksum;
