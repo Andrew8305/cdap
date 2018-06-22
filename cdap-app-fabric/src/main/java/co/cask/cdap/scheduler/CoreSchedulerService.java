@@ -44,7 +44,11 @@ import co.cask.cdap.internal.app.runtime.schedule.store.ProgramScheduleStoreData
 import co.cask.cdap.internal.app.runtime.schedule.store.Schedulers;
 import co.cask.cdap.internal.app.store.profile.ProfileDataset;
 import co.cask.cdap.proto.ProgramType;
-import co.cask.cdap.proto.id.*;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.ProfileId;
+import co.cask.cdap.proto.id.ProgramId;
+import co.cask.cdap.proto.id.ScheduleId;
 import co.cask.cdap.runtime.spi.profile.ProfileStatus;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
