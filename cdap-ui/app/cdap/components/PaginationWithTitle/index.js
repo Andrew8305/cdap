@@ -28,6 +28,30 @@ export default class PaginationWithTitle extends Component {
     handlePageChange: PropTypes.func
   };
 
+  renderPaginationComponent() {
+    if (this.props.totalPages < 2) {
+      return null;
+    }
+
+    return (
+      <ReactPaginate
+        pageCount={this.props.totalPages}
+        pageRangeDisplayed={3}
+        marginPagesDisplayed={1}
+        breakLabel={<span>...</span>}
+        breakClassName={"ellipsis"}
+        previousLabel={<span className="fa fa-angle-left"></span>}
+        nextLabel={<span className="fa fa-angle-right"></span>}
+        onPageChange={this.props.handlePageChange.bind(this)}
+        disableInitialCallback={true}
+        initialPage={this.props.currentPage-1}
+        forcePage={this.props.currentPage-1}
+        containerClassName={"page-list"}
+        activeClassName={"current-page"}
+      />
+    );
+  }
+
   render() {
     return (
       <span className="pagination-with-title">
@@ -36,21 +60,7 @@ export default class PaginationWithTitle extends Component {
             {this.props.numberOfEntities} {this.props.title || 'Pages'}
           </span>
         </ul>
-        <ReactPaginate
-          pageCount={this.props.totalPages}
-          pageRangeDisplayed={3}
-          marginPagesDisplayed={1}
-          breakLabel={<span>...</span>}
-          breakClassName={"ellipsis"}
-          previousLabel={<span className="fa fa-angle-left"></span>}
-          nextLabel={<span className="fa fa-angle-right"></span>}
-          onPageChange={this.props.handlePageChange.bind(this)}
-          disableInitialCallback={true}
-          initialPage={this.props.currentPage-1}
-          forcePage={this.props.currentPage-1}
-          containerClassName={"page-list"}
-          activeClassName={"current-page"}
-        />
+        {this.renderPaginationComponent()}
       </span>
     );
   }
