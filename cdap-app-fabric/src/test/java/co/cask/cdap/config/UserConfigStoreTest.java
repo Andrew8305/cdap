@@ -16,7 +16,6 @@
 
 package co.cask.cdap.config;
 
-import co.cask.cdap.common.BadRequestException;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.ProfileConflictException;
 import co.cask.cdap.common.id.Id;
@@ -36,9 +35,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Tests for {@link ConfigStore}, {@link ConsoleSettingsStore}, {@link DashboardStore} and {@link PreferencesStore}.
+ * Tests for {@link ConfigStore}, {@link ConsoleSettingsStore}, {@link DashboardStore} and {@link PreferencesService}.
  */
-public class UserPreferencesStoreTest extends AppFabricTestBase {
+public class UserConfigStoreTest extends AppFabricTestBase {
 
   // Config Store tests
   @Test
@@ -190,7 +189,7 @@ public class UserPreferencesStoreTest extends AppFabricTestBase {
   @Test
   public void testCleanSlate() throws Exception {
     Map<String, String> emptyMap = ImmutableMap.of();
-    PreferencesStore store = getInjector().getInstance(PreferencesStore.class);
+    PreferencesService store = getInjector().getInstance(PreferencesService.class);
     Assert.assertEquals(emptyMap, store.getProperties());
     Assert.assertEquals(emptyMap, store.getProperties("somenamespace"));
     Assert.assertEquals(emptyMap, store.getProperties(Id.Namespace.DEFAULT.getId()));
@@ -206,7 +205,7 @@ public class UserPreferencesStoreTest extends AppFabricTestBase {
   public void testBasicProperties() throws Exception {
     Map<String, String> propMap = Maps.newHashMap();
     propMap.put("key", "instance");
-    PreferencesStore store = getInjector().getInstance(PreferencesStore.class);
+    PreferencesService store = getInjector().getInstance(PreferencesService.class);
     store.setProperties(propMap);
     Assert.assertEquals(propMap, store.getProperties());
     Assert.assertEquals(propMap, store.getResolvedProperties("a", "b", "workflows", "d"));
@@ -223,7 +222,7 @@ public class UserPreferencesStoreTest extends AppFabricTestBase {
   public void testMultiLevelProperties() throws Exception {
     Map<String, String> propMap = Maps.newHashMap();
     propMap.put("key", "namespace");
-    PreferencesStore store = getInjector().getInstance(PreferencesStore.class);
+    PreferencesService store = getInjector().getInstance(PreferencesService.class);
     store.setProperties("myspace", propMap);
     propMap.put("key", "application");
     store.setProperties("myspace", "app", propMap);
@@ -252,7 +251,7 @@ public class UserPreferencesStoreTest extends AppFabricTestBase {
 
   @Test
   public void testAddProfileInProperties() throws Exception {
-    PreferencesStore prefStore = getInjector().getInstance(PreferencesStore.class);
+    PreferencesService prefStore = getInjector().getInstance(PreferencesService.class);
     ProfileService profileStore = getInjector().getInstance(ProfileService.class);
 
     // put a profile unrelated property should not affect the write

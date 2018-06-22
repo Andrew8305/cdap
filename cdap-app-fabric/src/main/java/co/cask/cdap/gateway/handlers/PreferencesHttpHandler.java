@@ -20,7 +20,7 @@ import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.security.AuditDetail;
 import co.cask.cdap.common.security.AuditPolicy;
-import co.cask.cdap.config.PreferencesStore;
+import co.cask.cdap.config.PreferencesService;
 import co.cask.cdap.gateway.handlers.util.AbstractAppFabricHttpHandler;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -51,13 +51,13 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
 
   private static final Gson GSON = new Gson();
 
-  private final PreferencesStore preferencesStore;
+  private final PreferencesService preferencesService;
   private final Store store;
   private final NamespaceStore nsStore;
 
   @Inject
-  PreferencesHttpHandler(PreferencesStore preferencesStore, Store store, NamespaceStore nsStore) {
-    this.preferencesStore = preferencesStore;
+  PreferencesHttpHandler(PreferencesService preferencesService, Store store, NamespaceStore nsStore) {
+    this.preferencesService = preferencesService;
     this.store = store;
     this.nsStore = nsStore;
   }
@@ -66,13 +66,13 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
   @Path("/preferences")
   @GET
   public void getInstancePrefs(HttpRequest request, HttpResponder responder) throws Exception {
-    responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesStore.getProperties()));
+    responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesService.getProperties()));
   }
 
   @Path("/preferences")
   @DELETE
   public void deleteInstancePrefs(HttpRequest request, HttpResponder responder) throws Exception {
-    preferencesStore.deleteProperties();
+    preferencesService.deleteProperties();
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
@@ -82,7 +82,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
   public void setInstancePrefs(FullHttpRequest request, HttpResponder responder) throws Exception {
     try {
       Map<String, String> propMap = decodeArguments(request);
-      preferencesStore.setProperties(propMap);
+      preferencesService.setProperties(propMap);
       responder.sendStatus(HttpResponseStatus.OK);
     } catch (JsonSyntaxException jsonEx) {
       responder.sendString(HttpResponseStatus.BAD_REQUEST, "Invalid JSON in body");
@@ -100,9 +100,9 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
       responder.sendString(HttpResponseStatus.NOT_FOUND, String.format("Namespace %s not present", namespace));
     } else {
       if (resolved) {
-        responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesStore.getResolvedProperties(namespace)));
+        responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesService.getResolvedProperties(namespace)));
       } else {
-        responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesStore.getProperties(namespace)));
+        responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesService.getProperties(namespace)));
       }
     }
   }
@@ -119,7 +119,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
 
     try {
       Map<String, String> propMap = decodeArguments(request);
-      preferencesStore.setProperties(namespace, propMap);
+      preferencesService.setProperties(namespace, propMap);
       responder.sendStatus(HttpResponseStatus.OK);
     } catch (JsonSyntaxException jsonEx) {
       responder.sendString(HttpResponseStatus.BAD_REQUEST, "Invalid JSON in body");
@@ -133,7 +133,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
     if (nsStore.get(new NamespaceId(namespace)) == null) {
       responder.sendString(HttpResponseStatus.NOT_FOUND, String.format("Namespace %s not present", namespace));
     } else {
-      preferencesStore.deleteProperties(namespace);
+      preferencesService.deleteProperties(namespace);
       responder.sendStatus(HttpResponseStatus.OK);
     }
   }
@@ -151,9 +151,9 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
     } else {
       if (resolved) {
         responder.sendJson(HttpResponseStatus.OK,
-                           GSON.toJson(preferencesStore.getResolvedProperties(namespace, appId)));
+                           GSON.toJson(preferencesService.getResolvedProperties(namespace, appId)));
       } else {
-        responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesStore.getProperties(namespace, appId)));
+        responder.sendJson(HttpResponseStatus.OK, GSON.toJson(preferencesService.getProperties(namespace, appId)));
       }
     }
   }
@@ -172,7 +172,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
 
     try {
       Map<String, String> propMap = decodeArguments(request);
-      preferencesStore.setProperties(namespace, appId, propMap);
+      preferencesService.setProperties(namespace, appId, propMap);
       responder.sendStatus(HttpResponseStatus.OK);
     } catch (JsonSyntaxException jsonEx) {
       responder.sendString(HttpResponseStatus.BAD_REQUEST, "Invalid JSON in body");
@@ -188,7 +188,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
       responder.sendString(HttpResponseStatus.NOT_FOUND, String.format("Application %s in Namespace %s not present",
                                                                        appId, namespace));
     } else {
-      preferencesStore.deleteProperties(namespace, appId);
+      preferencesService.deleteProperties(namespace, appId);
       responder.sendStatus(HttpResponseStatus.OK);
     }
   }
@@ -204,11 +204,11 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
     if (checkIfProgramExists(namespace, appId, programType, programId, responder)) {
       if (resolved) {
         responder.sendJson(HttpResponseStatus.OK,
-                           GSON.toJson(preferencesStore.getResolvedProperties(namespace, appId,
-                                                                              programType, programId)));
+                           GSON.toJson(preferencesService.getResolvedProperties(namespace, appId,
+                                                                                programType, programId)));
       } else {
         responder.sendJson(HttpResponseStatus.OK,
-                           GSON.toJson(preferencesStore.getProperties(namespace, appId, programType, programId)));
+                           GSON.toJson(preferencesService.getProperties(namespace, appId, programType, programId)));
       }
     }
   }
@@ -223,7 +223,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
     if (checkIfProgramExists(namespace, appId, programType, programId, responder)) {
       try {
         Map<String, String> propMap = decodeArguments(request);
-        preferencesStore.setProperties(namespace, appId, programType, programId, propMap);
+        preferencesService.setProperties(namespace, appId, programType, programId, propMap);
         responder.sendStatus(HttpResponseStatus.OK);
       } catch (JsonSyntaxException jsonEx) {
         responder.sendString(HttpResponseStatus.BAD_REQUEST, "Invalid JSON in body");
@@ -239,7 +239,7 @@ public class PreferencesHttpHandler extends AbstractAppFabricHttpHandler {
                                  @PathParam("program-id") String programId)
     throws Exception {
     if (checkIfProgramExists(namespace, appId, programType, programId, responder)) {
-      preferencesStore.deleteProperties(namespace, appId, programType, programId);
+      preferencesService.deleteProperties(namespace, appId, programType, programId);
       responder.sendStatus(HttpResponseStatus.OK);
     }
   }

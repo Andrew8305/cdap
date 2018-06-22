@@ -36,7 +36,7 @@ public final class MetadataMessage {
     WORKFLOW_TOKEN,
     WORKFLOW_STATE,
     PROFILE_UPDATE,
-    PROILE_REMOVE
+    PROFILE_REMOVE
   }
 
   private final Type type;

@@ -177,7 +177,7 @@ public class MetadataSubscriberService extends AbstractMessagingSubscriberServic
           case WORKFLOW_STATE:
             return new WorkflowProcessor(datasetContext);
           case PROFILE_UPDATE:
-          case PROILE_REMOVE:
+          case PROFILE_REMOVE:
             return new ProfileMetadataMessageProcessor(cConf, datasetContext, datasetFramework);
           default:
             return null;

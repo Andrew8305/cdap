@@ -43,7 +43,7 @@ import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.id.Id;
-import co.cask.cdap.config.PreferencesStore;
+import co.cask.cdap.config.PreferencesService;
 import co.cask.cdap.data2.metadata.store.MetadataStore;
 import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
@@ -121,7 +121,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
   private final QueueAdmin queueAdmin;
   private final StreamConsumerFactory streamConsumerFactory;
   private final UsageRegistry usageRegistry;
-  private final PreferencesStore preferencesStore;
+  private final PreferencesService preferencesService;
   private final MetricStore metricStore;
   private final OwnerAdmin ownerAdmin;
   private final ArtifactRepository artifactRepository;
@@ -139,7 +139,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
                               Store store,
                               Scheduler scheduler, QueueAdmin queueAdmin,
                               StreamConsumerFactory streamConsumerFactory, UsageRegistry usageRegistry,
-                              PreferencesStore preferencesStore, MetricStore metricStore, OwnerAdmin ownerAdmin,
+                              PreferencesService preferencesService, MetricStore metricStore, OwnerAdmin ownerAdmin,
                               ArtifactRepository artifactRepository,
                               ManagerFactory<AppDeploymentInfo, ApplicationWithPrograms> managerFactory,
                               MetadataStore metadataStore,
@@ -153,7 +153,7 @@ public class ApplicationLifecycleService extends AbstractIdleService {
     this.queueAdmin = queueAdmin;
     this.streamConsumerFactory = streamConsumerFactory;
     this.usageRegistry = usageRegistry;
-    this.preferencesStore = preferencesStore;
+    this.preferencesService = preferencesService;
     this.metricStore = metricStore;
     this.artifactRepository = artifactRepository;
     this.managerFactory = managerFactory;
@@ -632,12 +632,12 @@ public class ApplicationLifecycleService extends AbstractIdleService {
     Iterable<ProgramSpecification> programSpecs = getProgramSpecs(appId);
     for (ProgramSpecification spec : programSpecs) {
 
-      preferencesStore.deleteProperties(appId.getNamespace(), appId.getApplication(),
-                                        ProgramTypes.fromSpecification(spec).getCategoryName(), spec.getName());
+      preferencesService.deleteProperties(appId.getNamespace(), appId.getApplication(),
+                                          ProgramTypes.fromSpecification(spec).getCategoryName(), spec.getName());
       LOG.trace("Deleted Preferences of Program : {}, {}, {}, {}", appId.getNamespace(), appId.getApplication(),
                 ProgramTypes.fromSpecification(spec).getCategoryName(), spec.getName());
     }
-    preferencesStore.deleteProperties(appId.getNamespace(), appId.getApplication());
+    preferencesService.deleteProperties(appId.getNamespace(), appId.getApplication());
     LOG.trace("Deleted Preferences of Application : {}, {}", appId.getNamespace(), appId.getApplication());
   }
 

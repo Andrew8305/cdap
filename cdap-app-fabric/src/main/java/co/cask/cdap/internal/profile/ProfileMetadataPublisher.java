@@ -71,7 +71,7 @@ public class ProfileMetadataPublisher {
    * @param entityIds the set of entities whose profile metadata needs to get removed
    */
   public void removeProfileMetadata(EntityId entityId, Set<? extends EntityId> entityIds) {
-    publishProfileMetadata(entityId, MetadataMessage.Type.PROILE_REMOVE, entityIds);
+    publishProfileMetadata(entityId, MetadataMessage.Type.PROFILE_REMOVE, entityIds);
   }
 
   private void publishProfileMetadata(EntityId entityId, MetadataMessage.Type type, Set<? extends EntityId> entityIds) {

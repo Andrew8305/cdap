@@ -21,26 +21,19 @@ import co.cask.cdap.api.Transactionals;
 import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.ProfileConflictException;
-import co.cask.cdap.config.Config;
-import co.cask.cdap.config.ConfigDataset;
-import co.cask.cdap.config.PreferencesStore;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.MultiThreadDatasetCache;
 import co.cask.cdap.data2.transaction.Transactions;
-import co.cask.cdap.internal.app.runtime.SystemArguments;
 import co.cask.cdap.internal.app.store.profile.ProfileDataset;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.ProfileId;
 import co.cask.cdap.proto.profile.Profile;
-import co.cask.cdap.runtime.spi.profile.ProfileStatus;
 import org.apache.tephra.RetryStrategies;
 import org.apache.tephra.TransactionSystemClient;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import javax.inject.Inject;
 
 /**

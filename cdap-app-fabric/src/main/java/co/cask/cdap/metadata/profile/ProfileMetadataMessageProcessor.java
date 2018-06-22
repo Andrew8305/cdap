@@ -38,6 +38,7 @@ import co.cask.cdap.metadata.MetadataMessageProcessor;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.codec.EntityIdTypeAdapter;
+import co.cask.cdap.proto.element.EntityType;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.EntityId;
 import co.cask.cdap.proto.id.InstanceId;
@@ -97,7 +98,7 @@ public class ProfileMetadataMessageProcessor implements MetadataMessageProcessor
       case PROFILE_UPDATE:
         updateProfileMetadata(entityId, message);
         break;
-      case PROILE_REMOVE:
+      case PROFILE_REMOVE:
         removeProfileMetadata(message.getPayload(GSON, SET_ENTITY_TYPE));
         break;
       default:
@@ -214,7 +215,7 @@ public class ProfileMetadataMessageProcessor implements MetadataMessageProcessor
   // TODO: CDAP-13579 consider preference key starts with [scope].[name].system.profile.name
   @Nullable
   private ProfileId getResolvedProfileId(EntityId entityId) {
-    if (entityId instanceof InstanceId) {
+    if (entityId.getEntityType().equals(EntityType.INSTANCE)) {
       return SystemArguments.getProfileIdFromArgs(NamespaceId.SYSTEM, getPreferences("", entityId)).orElse(null);
     }
 
