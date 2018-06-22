@@ -1567,6 +1567,12 @@ features:
 
   PipelineDetails:
     duration: Duration
+    PipelineRuntimeArgsDropdownBtn:
+      RuntimeArgsTabContent:
+        ProvidedPopover:
+          clearAll: Clear All
+          provided: Provided
+          selectAll: Select All
     RunLevel:
       configs: Run Configs
       currentIndex: '({currentRunIndex} of {numRuns})'
