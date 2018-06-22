@@ -26,8 +26,11 @@ import {getCurrentNamespace} from 'services/NamespaceStore';
 import cloneDeep from 'lodash/cloneDeep';
 import { MyPreferenceApi } from 'api/preference';
 import {PROFILE_NAME_PREFERENCE_PROPERTY, PROFILE_PROPERTIES_PREFERENCE} from 'components/PipelineDetails/ProfilesListView';
-import {convertKeyValuePairsToMap} from 'services/helpers';
+import {convertKeyValuePairsToMap, objectQuery} from 'services/helpers';
 import isEqual from 'lodash/isEqual';
+import uuidV4 from 'uuid/v4';
+import uniqBy from 'lodash/uniqBy';
+
 
 const applyRuntimeArgs = () => {
   let runtimeArgs = PipelineConfigurationsStore.getState().runtimeArgs;
@@ -320,6 +323,81 @@ const getCustomizationMap = (properties) => {
   return profileCustomizations;
 };
 
+const fetchAndUpdateRuntimeArgs = () => {
+  const params = {
+    namespace: getCurrentNamespace(),
+    appId: PipelineDetailStore.getState().name
+  };
+
+  let observable$ = MyPipelineApi.fetchMacros(params)
+    .combineLatest([
+      MyPreferenceApi.getAppPreferences(params),
+      // This is required to resolve macros from preferences
+      // Say DEFAULT_STREAM is a namespace level preference used as a macro
+      // in one of the plugins in the pipeline.
+      MyPreferenceApi.getAppPreferencesResolved(params)
+    ]);
+
+  observable$.subscribe((res) => {
+    let macrosSpec = res[0];
+    let macrosMap = {};
+    let macros = [];
+    macrosSpec.map(ms => {
+      if (objectQuery(ms, 'spec', 'properties', 'macros', 'lookupProperties')) {
+        macros = macros.concat(ms.spec.properties.macros.lookupProperties);
+      }
+    });
+    macros.forEach(macro => {
+      macrosMap[macro] = '';
+    });
+
+    let currentAppPrefs = res[1];
+    let currentAppResolvedPrefs = res[2];
+    let resolvedMacros = getMacrosResolvedByPrefs(currentAppResolvedPrefs, macrosMap);
+    // When a pipeline is published there won't be any profile related information
+    // at app level preference. However the pipeline, when run will be run with the 'default'
+    // profile that is set at the namespace level. So we populate in UI the default
+    // profile for a pipeline until the user choose something else. This is populated from
+    // resolved app level preference which will provide preferences from namespace.
+    const isProfileProperty = (property) => (
+      [PROFILE_NAME_PREFERENCE_PROPERTY, PROFILE_PROPERTIES_PREFERENCE]
+        .filter(profilePrefix => property.indexOf(profilePrefix) !== -1)
+        .length
+    );
+    Object.keys(currentAppResolvedPrefs).forEach(resolvePref => {
+      if (isProfileProperty(resolvePref) !== 0) {
+        currentAppPrefs[resolvePref] = currentAppResolvedPrefs[resolvePref];
+      }
+    });
+
+    PipelineConfigurationsStore.dispatch({
+      type: PipelineConfigurationsActions.SET_RESOLVED_MACROS,
+      payload: { resolvedMacros }
+    });
+    const getPairs = (map) => (
+      Object
+        .entries(map)
+        .filter(([key]) => key.length)
+        .map(([key, value]) => ({
+          key, value,
+          uniqueId: uuidV4()
+        }))
+    );
+    let runtimeArgsPairs = getPairs(currentAppPrefs);
+    let resolveMacrosPairs = getPairs(resolvedMacros);
+
+    PipelineConfigurationsStore.dispatch({
+      type: PipelineConfigurationsActions.SET_RUNTIME_ARGS,
+      payload: {
+        runtimeArgs: {
+          pairs: uniqBy(runtimeArgsPairs.concat(resolveMacrosPairs), (pair) => pair.key)
+        }
+      }
+    });
+  });
+  return observable$;
+};
+
 const reset = () => {
   PipelineConfigurationsStore.dispatch({
     type: PipelineConfigurationsActions.RESET
@@ -340,5 +418,6 @@ export {
   schedulePipeline,
   suspendSchedule,
   getCustomizationMap,
+  fetchAndUpdateRuntimeArgs,
   reset
 };

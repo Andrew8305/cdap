@@ -179,7 +179,7 @@ const checkForReset = (runtimeArgs, resolvedMacros) => {
       }
     }
   });
-  return runtimeArgs;
+  return getRuntimeArgsForDisplay(runtimeArgs, resolvedMacros);
 };
 
 const resetRuntimeArgToResolvedValue = (index, runtimeArgs, resolvedMacros) => {
@@ -190,12 +190,14 @@ const resetRuntimeArgToResolvedValue = (index, runtimeArgs, resolvedMacros) => {
 
 const getRuntimeArgsForDisplay = (currentRuntimeArgs, macrosMap) => {
   let providedMacros = {};
+  let runtimeArgsMap = {};
 
   // holds provided macros in an object here even though we don't need the value,
   // because object hash is faster than Array.indexOf
   if (currentRuntimeArgs.pairs) {
     currentRuntimeArgs.pairs.forEach((currentPair) => {
       let key = currentPair.key;
+      runtimeArgsMap[key] = currentPair.value || '';
       if (currentPair.notDeletable && currentPair.provided) {
         providedMacros[key] = currentPair.value;
       }
@@ -207,7 +209,8 @@ const getRuntimeArgsForDisplay = (currentRuntimeArgs, macrosMap) => {
   let macros = Object.keys(macrosMap).map(macroKey => {
     return {
       key: macroKey,
-      value: macrosMap[macroKey],
+      value: runtimeArgsMap[macroKey] || '',
+      showReset: macrosMap[macroKey].showReset,
       uniqueId: 'id-' + uuidV4(),
       notDeletable: true,
       provided: providedMacros.hasOwnProperty(macroKey)
