@@ -23,22 +23,12 @@ import {GLOBALS} from 'services/global-constants';
 import {MyPipelineApi} from 'api/pipeline';
 import {MyProgramApi} from 'api/program';
 import {getCurrentNamespace} from 'services/NamespaceStore';
-import cloneDeep from 'lodash/cloneDeep';
 import { MyPreferenceApi } from 'api/preference';
 import {PROFILE_NAME_PREFERENCE_PROPERTY, PROFILE_PROPERTIES_PREFERENCE} from 'components/PipelineDetails/ProfilesListView';
-import {convertKeyValuePairsToMap, objectQuery} from 'services/helpers';
-import isEqual from 'lodash/isEqual';
+import { objectQuery} from 'services/helpers';
 import uuidV4 from 'uuid/v4';
 import uniqBy from 'lodash/uniqBy';
 
-
-const applyRuntimeArgs = () => {
-  let runtimeArgs = PipelineConfigurationsStore.getState().runtimeArgs;
-  PipelineConfigurationsStore.dispatch({
-    type: PipelineConfigurationsActions.SET_SAVED_RUNTIME_ARGS,
-    payload: { savedRuntimeArgs: cloneDeep(runtimeArgs) }
-  });
-};
 
 // Filter certain preferences from being shown in the run time arguments 
 // They are being represented in other places (like selected compute profile).
@@ -96,26 +86,6 @@ const updateRunTimeArgs = (rtArgs) => {
   });
 };
 
-const revertConfigsToSavedValues = () => {
-  let savedRuntimeArgs = PipelineConfigurationsStore.getState().savedRuntimeArgs;
-  KeyValueStore.dispatch({
-    type: KeyValueStoreActions.onUpdate,
-    payload: { pairs: savedRuntimeArgs.pairs }
-  });
-  PipelineConfigurationsStore.dispatch({
-    type: PipelineConfigurationsActions.INITIALIZE_CONFIG,
-    payload: {...PipelineDetailStore.getState().config}
-  });
-  PipelineConfigurationsStore.dispatch({
-    type: PipelineConfigurationsActions.SET_RUNTIME_ARGS,
-    payload: { runtimeArgs: cloneDeep(savedRuntimeArgs) }
-  });
-  PipelineConfigurationsStore.dispatch({
-    type: PipelineConfigurationsActions.SET_MODELESS_OPEN_STATUS,
-    payload: { open: false }
-  });
-};
-
 const updateKeyValueStore = () => {
   let runtimeArgsPairs = PipelineConfigurationsStore.getState().runtimeArgs.pairs;
   KeyValueStore.dispatch({
@@ -150,12 +120,6 @@ const updatePipelineEditStatus = () => {
     return oldvalue.memoryMB === newvalue.memoryMB && oldvalue.virtualCores === newvalue.virtualCores;
   };
 
-  const getRunTimeArgsModified = (savedRunTime = [], newRunTime = []) => {
-    let savedRunTimeObj = convertKeyValuePairsToMap(savedRunTime);
-    let newRunTimeObj = convertKeyValuePairsToMap(newRunTime);
-    return !isEqual(savedRunTimeObj, newRunTimeObj);
-  };
-
   let oldConfig = PipelineDetailStore.getState().config;
   let updatedConfig = PipelineConfigurationsStore.getState();
 
@@ -165,15 +129,13 @@ const updatePipelineEditStatus = () => {
   let isInstrumentationModified = oldConfig.processTimingEnabled !== updatedConfig.processTimingEnabled;
   let isStageLoggingModified = oldConfig.stageLoggingEnabled !== updatedConfig.stageLoggingEnabled;
   let isCustomEngineConfigModified = oldConfig.properties !== updatedConfig.properties;
-  let isRunTimeArgsModified = getRunTimeArgsModified(updatedConfig.runtimeArgs.pairs, updatedConfig.savedRuntimeArgs.pairs);
 
   let isModified = (
     isResourcesModified ||
     isDriverResourcesModidified ||
     isInstrumentationModified ||
     isStageLoggingModified ||
-    isCustomEngineConfigModified ||
-    isRunTimeArgsModified
+    isCustomEngineConfigModified
   );
 
   if (PipelineDetailStore.getState().artifact.name === GLOBALS.etlDataStreams) {
@@ -276,13 +238,14 @@ const runPipeline = () => {
     programId: GLOBALS.programId[artifact.name],
     action: 'start'
   };
-  MyProgramApi.action(params)
-  .subscribe(
-    () => {},
-    (err) => {
-    setRunButtonLoading(false);
-    setRunError(err.response || err);
-  });
+  MyProgramApi
+    .action(params)
+    .subscribe(
+      () => {},
+      (err) => {
+        setRunButtonLoading(false);
+        setRunError(err.response || err);
+      });
 };
 
 const schedulePipeline = () => {
@@ -385,12 +348,12 @@ const fetchAndUpdateRuntimeArgs = () => {
     );
     let runtimeArgsPairs = getPairs(currentAppPrefs);
     let resolveMacrosPairs = getPairs(resolvedMacros);
-
+    let finalRunTimeArgsPairs = uniqBy(runtimeArgsPairs.concat(resolveMacrosPairs), (pair) => pair.key);
     PipelineConfigurationsStore.dispatch({
       type: PipelineConfigurationsActions.SET_RUNTIME_ARGS,
       payload: {
         runtimeArgs: {
-          pairs: uniqBy(runtimeArgsPairs.concat(resolveMacrosPairs), (pair) => pair.key)
+          pairs: finalRunTimeArgsPairs
         }
       }
     });
@@ -405,10 +368,8 @@ const reset = () => {
 };
 
 export {
-  applyRuntimeArgs,
   getFilteredRuntimeArgs,
   updateRunTimeArgs,
-  revertConfigsToSavedValues,
   updateKeyValueStore,
   getMacrosResolvedByPrefs,
   updatePipelineEditStatus,

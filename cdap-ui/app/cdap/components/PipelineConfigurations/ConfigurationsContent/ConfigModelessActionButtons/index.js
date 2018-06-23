@@ -17,7 +17,6 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {
-  applyRuntimeArgs,
   updatePipeline,
   runPipeline,
   schedulePipeline,
@@ -82,7 +81,6 @@ export default class ConfigModelessActionButtons extends Component {
       actionFn();
       return;
     }
-    applyRuntimeArgs();
 
     this.setState({
       [loadingState]: true

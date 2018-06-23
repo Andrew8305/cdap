@@ -37,7 +37,6 @@ import cloneDeep from 'lodash/cloneDeep';
 const ACTIONS = {
   INITIALIZE_CONFIG: 'INITIALIZE_CONFIG',
   SET_RUNTIME_ARGS: 'SET_RUNTIME_ARGS',
-  SET_SAVED_RUNTIME_ARGS: 'SET_SAVED_RUNTIME_ARGS',
   SET_RESOLVED_MACROS: 'SET_RESOLVED_MACROS',
   RESET_RUNTIME_ARG_TO_RESOLVED_VALUE: 'RESET_RUNTIME_ARG_TO_RESOLVED_VALUE',
   SET_ENGINE: 'SET_ENGINE',
@@ -87,12 +86,7 @@ const DEFAULT_RUNTIME_ARGS = {
 
 const DEFAULT_CONFIGURE_OPTIONS = {
 
-  // savedRuntimeArgs represent the runtime args the user has Saved for the current session
-  // runtimeArgs represent the current values in the modeless
-  // If the user changes runtime args values in the modeless but doesn't click Save, then we'll
-  // revert runtimeArgs to savedRuntimeArgs
   runtimeArgs: cloneDeep(DEFAULT_RUNTIME_ARGS),
-  savedRuntimeArgs: cloneDeep(DEFAULT_RUNTIME_ARGS),
   resolvedMacros: {},
   customConfigKeyValuePairs: cloneDeep(DEFAULT_RUNTIME_ARGS),
   postRunActions: [],
@@ -238,22 +232,15 @@ const configure = (state = DEFAULT_CONFIGURE_OPTIONS, action = defaultAction) =>
         runtimeArgs: checkForReset(action.payload.runtimeArgs, state.resolvedMacros),
         isMissingKeyValues: checkIfMissingKeyValues(action.payload.runtimeArgs, state.customConfigKeyValuePairs)
       };
-    case ACTIONS.SET_SAVED_RUNTIME_ARGS:
-      return {
-        ...state,
-        savedRuntimeArgs: action.payload.savedRuntimeArgs
-      };
     case ACTIONS.SET_RESOLVED_MACROS: {
       let resolvedMacros = action.payload.resolvedMacros;
       let runtimeArgs = getRuntimeArgsForDisplay(cloneDeep(state.runtimeArgs), resolvedMacros);
-      let savedRuntimeArgs = cloneDeep(runtimeArgs);
       let isMissingKeyValues = checkIfMissingKeyValues(runtimeArgs, state.customConfigKeyValuePairs);
 
       return {
         ...state,
         resolvedMacros,
         runtimeArgs,
-        savedRuntimeArgs,
         isMissingKeyValues
       };
     }
