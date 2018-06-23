@@ -16,6 +16,7 @@
 
 import {combineReducers, createStore} from 'redux';
 import KeyValueStoreActions from './KeyValueStoreActions';
+import {composeEnhancers} from 'services/helpers';
 import uuidV4 from 'uuid/v4';
 
 const defaultAction = {
@@ -70,7 +71,7 @@ const keyValues = (state = initialState, action = defaultAction) => {
       }
       return stateCopy;
     case KeyValueStoreActions.onReset:
-      return [];
+      return initialState;
     case KeyValueStoreActions.onUpdate:
       stateCopy = Object.assign({}, state);
       stateCopy.pairs = action.payload.pairs;
@@ -83,7 +84,7 @@ const keyValues = (state = initialState, action = defaultAction) => {
 const KeyValueStore = createStore(
   combineReducers({keyValues}),
   {keyValues: initialState},
-  window.devToolsExtension ? window.devToolsExtension() : f => f
+  composeEnhancers('KeyValueStore')()
 );
 
 export default KeyValueStore;
