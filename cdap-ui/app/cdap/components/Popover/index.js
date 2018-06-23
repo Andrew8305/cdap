@@ -72,7 +72,8 @@ export default class Popover extends PureComponent {
   hidePopoverEventHandler = (popoverId) => {
     if (
       this.id !== popoverId &&
-      !isDescendant(document.getElementById(this.id), document.getElementById(popoverId))
+      !isDescendant(document.getElementById(this.id), document.getElementById(popoverId)) &&
+      this.state.showPopover
     ) {
       this.setState({
         showPopover: false
