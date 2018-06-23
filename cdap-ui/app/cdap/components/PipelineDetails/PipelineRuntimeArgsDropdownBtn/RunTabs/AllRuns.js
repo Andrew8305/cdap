@@ -14,30 +14,96 @@
  * the License.
 */
 
-import React from 'react';
+import PropTypes from 'prop-types';
+import React, {PureComponent} from 'react';
 import RuntimeArgsTabContent from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn/RuntimeArgsTabContent';
+import {updatePreferences, runPipeline} from 'components/PipelineConfigurations/Store/ActionCreator';
+import BtnWithLoading from 'components/BtnWithLoading';
 
-export default function PipelineRunTimeArgsAllRuns() {
-  return (
-    <div className="runtime-args-tab-wrapper">
-      <div>
-        <strong> Set Runtime Arguments for all the future runs of this pipeline. </strong>
+export default class PipelineRunTimeArgsAllRuns extends PureComponent {
+
+  static propTypes = {
+    onClose: PropTypes.func.isRequired
+  };
+
+  state = {
+    saving: false,
+    savingAndRun: false,
+    error: null
+  };
+
+  toggleSaving = () => {
+    this.setState({
+      saving: !this.state.saving
+    });
+  };
+
+  toggleSavingAndRun = () => {
+    this.setState({
+      savingAndRun: !this.state.savingAndRun
+    });
+  };
+
+  saveRuntimeArgs = () => {
+    this.toggleSaving();
+    updatePreferences().subscribe(
+      () => {
+        this.props.onClose();
+      },
+      (err) => {
+        this.setState({
+          error: err.response || JSON.stringify(err),
+          saving: false
+        });
+      }
+    );
+  };
+
+  saveRuntimeArgsAndRun = () => {
+    this.toggleSavingAndRun();
+    updatePreferences().subscribe(
+      () => {
+        runPipeline();
+        this.props.onClose();
+      },
+      (err) => {
+        this.setState({
+          error: err.response || JSON.stringify(err),
+          savingAndRun: false
+        });
+      }
+    );
+  }
+
+  render() {
+    return (
+      <div className="runtime-args-tab-wrapper">
         <div>
-          The values you set here, will be used by all the runs of the pipeline that will
-          occur from now until you change the Runtime Arguments.
+          <strong> Set Runtime Arguments for all the future runs of this pipeline. </strong>
+          <div>
+            The values you set here, will be used by all the runs of the pipeline that will
+            occur from now until you change the Runtime Arguments.
+          </div>
+        </div>
+
+        <RuntimeArgsTabContent />
+        <div className="btns-container">
+          <BtnWithLoading
+            loading={this.state.saving}
+            className="btn btn-primary"
+            onClick={this.saveRuntimeArgs}
+            disabled={this.state.saving || this.state.savingAndRun}
+            label="Save"
+          />
+          <BtnWithLoading
+            loading={this.state.savingAndRun}
+            className="btn btn-secondary"
+            onClick={this.saveRuntimeArgsAndRun}
+            disabled={this.state.saving || this.state.savingAndRun}
+            label="Save And Run"
+          />
         </div>
       </div>
-
-      <RuntimeArgsTabContent />
-
-      <div className="btns-container">
-        <div className="btn btn-primary">
-          Save
-        </div>
-        <div className="btn btn-secondary">
-          Save and Run
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
 }

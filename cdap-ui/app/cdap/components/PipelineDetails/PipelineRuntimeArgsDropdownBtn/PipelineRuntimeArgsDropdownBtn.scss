@@ -17,6 +17,7 @@
 @import '../../../styles/variables.scss';
 
 .arrow-btn-container {
+  height: 100%;
   .pipeline-run-btn {
     padding: 0;
     &.btn-popover-open {
