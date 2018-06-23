@@ -20,10 +20,9 @@ import IconSVG from 'components/IconSVG';
 import Alert from 'components/Alert';
 import {runPipeline} from 'components/PipelineConfigurations/Store/ActionCreator';
 import {setRunError} from 'components/PipelineDetails/store/ActionCreator';
-import {keyValuePairsHaveMissingValues} from 'components/KeyValuePairs/KeyValueStoreActions';
-import PipelineConfigurations from 'components/PipelineConfigurations';
-import {revertConfigsToSavedValues} from 'components/PipelineConfigurations/Store/ActionCreator';
+import {fetchAndUpdateRuntimeArgs} from 'components/PipelineConfigurations/Store/ActionCreator';
 import PipelineRuntimeArgsDropdownBtn from 'components/PipelineDetails/PipelineRuntimeArgsDropdownBtn';
+import PipelineConfigurationsStore from 'components/PipelineConfigurations/Store';
 import T from 'i18n-react';
 
 const PREFIX = 'features.PipelineDetails.TopPanel';
@@ -38,19 +37,15 @@ export default class PipelineRunButton extends Component {
   }
 
   state = {
-    showConfigModeless: false,
     showRunOptions: false
   };
 
-  toggleConfigModeless = () => {
-    this.setState({
-      showConfigModeless: !this.state.showConfigModeless
-    });
-  };
-
   toggleRunConfigOption = (showRunOptions) => {
+    if (showRunOptions === this.state.showRunOptions) {
+      return;
+    }
     this.setState({
-      showRunOptions
+      showRunOptions: showRunOptions || !this.state.showRunOptions
     });
   };
 
@@ -59,17 +54,14 @@ export default class PipelineRunButton extends Component {
       return;
     }
 
-    if (!this.state.showConfigModeless) {
-      revertConfigsToSavedValues();
-      // Have to set timeout here to make sure temporary changes in other config
-      // modeless don't get passed on as this.props.runtimeArgs here
-      setTimeout(() => {
-        if (keyValuePairsHaveMissingValues(this.props.runtimeArgs)) {
-          this.toggleConfigModeless();
-        } else {
-          runPipeline();
-        }
-      });
+    if (!this.state.showRunOptions) {
+      fetchAndUpdateRuntimeArgs();
+      let {isMissingKeyValues} = PipelineConfigurationsStore.getState();
+      if (isMissingKeyValues) {
+        this.toggleRunConfigOption();
+      } else {
+        runPipeline();
+      }
     }
   };
 
@@ -88,22 +80,13 @@ export default class PipelineRunButton extends Component {
     );
   }
 
-  renderConfigModeless() {
-    if (!this.state.showConfigModeless) { return null; }
-
-    return (
-      <PipelineConfigurations
-        onClose={this.toggleConfigModeless}
-        isDetailView={true}
-        isBatch={this.props.isBatch}
-        pipelineName={this.props.pipelineName}
-      />
-    );
-  }
-
   renderRunDropdownBtn = () => {
     return (
-      <PipelineRuntimeArgsDropdownBtn />
+      <PipelineRuntimeArgsDropdownBtn
+        showRunOptions={this.state.showRunOptions}
+        onToggle={this.toggleRunConfigOption}
+        disabled={this.props.runButtonLoading}
+      />
     );
   };
 
@@ -147,7 +130,6 @@ export default class PipelineRunButton extends Component {
         {this.renderRunError()}
         {this.renderRunDropdownBtn()}
         {this.renderPipelineRunButton()}
-        {this.renderConfigModeless()}
       </div>
     );
   }
