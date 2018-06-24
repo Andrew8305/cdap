@@ -36,6 +36,8 @@ import co.cask.cdap.proto.id.StreamId;
 import co.cask.cdap.proto.id.TopicId;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -44,7 +46,7 @@ import javax.inject.Inject;
  * An implementation of {@link LineageWriter} and {@link FieldLineageWriter} that publish lineage information to TMS.
  */
 public class MessagingLineageWriter implements LineageWriter, FieldLineageWriter {
-
+  private static final Logger LOG = LoggerFactory.getLogger(MessagingLineageWriter.class);
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(Operation.class, new OperationTypeAdapter())
     .create();
@@ -90,7 +92,9 @@ public class MessagingLineageWriter implements LineageWriter, FieldLineageWriter
     try {
       Retries.callWithRetries(() -> messagingService.publish(request), retryStrategy, Retries.ALWAYS_TRUE);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to publish metadata message: " + message, e);
+      LOG.trace("Failed to publish metadata message: {}", message);
+      throw new RuntimeException(String.format("Failed to publish metadata message of type '%s' for program " +
+              "run '%s'.", message.getType(), message.getProgramId().run(message.getRunId())), e);
     }
   }
 }

@@ -16,6 +16,8 @@
 
 package co.cask.cdap.api.lineage.field;
 
+import java.util.Objects;
+
 /**
  * Abstract base class to represent an Operation. Each operation has a
  * name and description. The name of operation must be unique within all

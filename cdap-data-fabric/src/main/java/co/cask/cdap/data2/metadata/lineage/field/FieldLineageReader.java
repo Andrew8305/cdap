@@ -30,8 +30,8 @@ public interface FieldLineageReader {
    * over the given time range.
    *
    * @param endPoint the EndPoint for which the fields need to be returned
-   * @param start start time(inclusive) in milliseconds
-   * @param end end time(exclusive) in milliseconds
+   * @param start start time (inclusive) in milliseconds
+   * @param end end time (exclusive) in milliseconds
    * @return set of fields written to a given EndPoint
    */
   Set<String> getFields(EndPoint endPoint, long start, long end);
@@ -42,8 +42,8 @@ public interface FieldLineageReader {
    * of the given EndPointField.
    *
    * @param endPointField the EndPointField for which incoming summary to be returned
-   * @param start start time(inclusive) in milliseconds
-   * @param end end time(exclusive) in milliseconds
+   * @param start start time (inclusive) in milliseconds
+   * @param end end time (exclusive) in milliseconds
    * @return the set of EndPointFields
    */
   Set<EndPointField> getIncomingSummary(EndPointField endPointField, long start, long end);
@@ -54,33 +54,35 @@ public interface FieldLineageReader {
    * specified EndPointField.
    *
    * @param endPointField the EndPointField for which outgoing summary to be returned
-   * @param start start time(inclusive) in milliseconds
-   * @param end end time(exclusive) in milliseconds
+   * @param start start time (inclusive) in milliseconds
+   * @param end end time (exclusive) in milliseconds
    * @return the set of EndPointFields
    */
   Set<EndPointField> getOutgoingSummary(EndPointField endPointField, long start, long end);
 
   /**
-   * Get the set of operations which were responsible for computing the fields
+   * Get the set of operations which were responsible for computing the given field
    * of the specified EndPoint over a given time range. Along with the operations, program
    * runs are also returned which performed these operations.
    *
    * @param endPoint the EndPoint for which incoming operations are to be returned
-   * @param start start time(inclusive) in milliseconds
-   * @param end end time(exclusive) in milliseconds
+   * @param field name of the field for which incoming operations are to be returned
+   * @param start start time (inclusive) in milliseconds
+   * @param end end time (exclusive) in milliseconds
    * @return the operations and program run information
    */
-  Set<ProgramRunOperations> getIncomingOperations(EndPoint endPoint, long start, long end);
+  Set<ProgramRunOperations> getIncomingOperations(EndPoint endPoint, String field, long start, long end);
 
   /**
-   * Get the set of operations which were performed on the fields of the specified EndPoint
+   * Get the set of operations which were performed on the field of the specified EndPoint
    * to compute the fields of the downstream EndPoints. Along with the operations, program
    * runs are also returned which performed these operations.
    *
    * @param endPoint the EndPoint for which outgoing operations are to be returned
-   * @param start start time(inclusive) in milliseconds
-   * @param end end time(exclusive) in milliseconds
+   * @param field name of the field for which outgoing operations are to be returned
+   * @param start start time (inclusive) in milliseconds
+   * @param end end time (exclusive) in milliseconds
    * @return the operations and program run information
    */
-  Set<ProgramRunOperations> getOutgoingOperations(EndPoint endPoint, long start, long end);
+  Set<ProgramRunOperations> getOutgoingOperations(EndPoint endPoint, String field, long start, long end);
 }

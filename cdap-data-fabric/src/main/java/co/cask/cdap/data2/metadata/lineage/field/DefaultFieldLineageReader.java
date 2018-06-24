@@ -20,6 +20,7 @@ package co.cask.cdap.data2.metadata.lineage.field;
 import co.cask.cdap.api.Transactional;
 import co.cask.cdap.api.Transactionals;
 import co.cask.cdap.api.lineage.field.EndPoint;
+import co.cask.cdap.api.lineage.field.Operation;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.data2.dataset2.MultiThreadDatasetCache;
@@ -32,6 +33,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.apache.tephra.TransactionSystemClient;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -89,22 +93,42 @@ public class DefaultFieldLineageReader implements FieldLineageReader {
   }
 
   @Override
-  public Set<ProgramRunOperations> getIncomingOperations(EndPoint endPoint, long start, long end) {
-    return Transactionals.execute(transactional, context -> {
-      FieldLineageDataset fieldLineageDataset = FieldLineageDataset.getFieldLineageDataset(context, datasetFramework,
-                                                                                           fieldLineageDatasetId);
-
-      return fieldLineageDataset.getIncomingOperations(endPoint, start, end);
-    });
+  public Set<ProgramRunOperations> getIncomingOperations(EndPoint endPoint, String field, long start, long end) {
+    return computeFieldOperations(true, endPoint, field, start, end);
   }
 
   @Override
-  public Set<ProgramRunOperations> getOutgoingOperations(EndPoint endPoint, long start, long end) {
-    return Transactionals.execute(transactional, context -> {
-      FieldLineageDataset fieldLineageDataset = FieldLineageDataset.getFieldLineageDataset(context, datasetFramework,
-                                                                                           fieldLineageDatasetId);
+  public Set<ProgramRunOperations> getOutgoingOperations(EndPoint endPoint, String field, long start, long end) {
+    return computeFieldOperations(false, endPoint, field, start, end);
+  }
 
-      return fieldLineageDataset.getOutgoingOperations(endPoint, start, end);
+  private Set<ProgramRunOperations> computeFieldOperations(boolean incoming, EndPoint endPoint, String field,
+                                                           long start, long end) {
+    Set<ProgramRunOperations> endPointOperations = Transactionals.execute(transactional, context -> {
+      FieldLineageDataset fieldLineageDataset = FieldLineageDataset.getFieldLineageDataset(context, datasetFramework,
+              fieldLineageDatasetId);
+
+      return incoming ? fieldLineageDataset.getIncomingOperations(endPoint, start, end)
+              : fieldLineageDataset.getOutgoingOperations(endPoint, start, end);
     });
+
+    Set<ProgramRunOperations> endPointFieldOperations = new HashSet<>();
+    for (ProgramRunOperations programRunOperation : endPointOperations) {
+      try {
+        FieldLineageInfo info = new FieldLineageInfo(programRunOperation.getOperations());
+        Set<Operation> fieldOperations = incoming ?
+                info.getIncomingOperationsForField(new EndPointField(endPoint, field))
+                : info.getOutgoingOperationsFromField(new EndPointField(endPoint, field));
+        ProgramRunOperations result = new ProgramRunOperations(info.getChecksum(),
+                programRunOperation.getProgramRunIds(), fieldOperations);
+        endPointFieldOperations.add(result);
+      } catch (Throwable e) {
+        // Creating instance of FieldLineageInfo might fail here because of the validation logic.
+        // For example if the field is created by read operation but not used later by any operation, then that field
+        // may not have complete end to end path.
+        // TODO: possibly relax validation logic when info object created from here
+      }
+    }
+    return endPointFieldOperations;
   }
 }

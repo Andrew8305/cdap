@@ -181,15 +181,19 @@ public class MetadataSubscriberServiceTest extends AppFabricTestBase {
       FieldLineageReader fieldLineageReader = new DefaultFieldLineageReader(getDatasetFramework(), getTxClient(),
                                                                             fieldLineageDatasetId);
 
+      Set<Operation> expectedOperations = new HashSet<>();
+      expectedOperations.add(new ReadOperation(read.getName(), read.getDescription(), read.getSource(), "offset"));
+      expectedOperations.add(new WriteOperation(write.getName(), write.getDescription(), write.getDestination(),
+                                                InputField.of(read.getName(), "offset")));
       Set<ProgramRunOperations> expectedSet = new HashSet<>();
-      expectedSet.add(new ProgramRunOperations(info1.getChecksum(), Collections.singleton(spark1Run1),
-                                               new HashSet<>(operations)));
-      expectedSet.add(new ProgramRunOperations(info2.getChecksum(), Collections.singleton(spark1Run2),
-                                               new HashSet<>(operations2)));
+      FieldLineageInfo expectedInfo = new FieldLineageInfo(expectedOperations);
+      expectedSet.add(new ProgramRunOperations(expectedInfo.getChecksum(), Collections.singleton(spark1Run1),
+              new HashSet<>(operations)));
+      expectedSet.add(new ProgramRunOperations(expectedInfo.getChecksum(), Collections.singleton(spark1Run2),
+              new HashSet<>(operations2)));
 
-      Tasks.waitFor(expectedSet, () -> fieldLineageReader.getIncomingOperations(EndPoint.of("ns", "endpoint2"), 1L,
-                                                                                Long.MAX_VALUE - 1),
-                    10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
+      Tasks.waitFor(expectedSet, () -> fieldLineageReader.getIncomingOperations(EndPoint.of("ns", "endpoint2"),
+              "offset", 1L, Long.MAX_VALUE - 1), 10, TimeUnit.SECONDS, 100, TimeUnit.MILLISECONDS);
 
       // Verifies usage has been written
       Set<EntityId> expectedUsage = new HashSet<>(Arrays.asList(dataset1, dataset3));

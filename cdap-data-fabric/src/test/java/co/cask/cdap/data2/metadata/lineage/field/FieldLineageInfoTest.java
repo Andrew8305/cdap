@@ -219,12 +219,28 @@ public class FieldLineageInfoTest {
     EndPointField expectedEndPointField = new EndPointField(EndPoint.of("endpoint1"), "offset");
     Assert.assertEquals(expectedEndPointField, sourceEndPointFields.iterator().next());
 
+    Set<Operation> incomingOperationsForField = info.getIncomingOperationsForField(endPointField);
+    Set<Operation> expectedOperations = new HashSet<>();
+    expectedOperations.add(new ReadOperation(read.getName(), read.getDescription(), read.getSource(), "offset"));
+    expectedOperations.add(new WriteOperation(write.getName(), write.getDescription(), write.getDestination(),
+                                              InputField.of(read.getName(), "offset")));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(incomingOperationsForField));
+
     // name in the destination is generated from body field read from source
     endPointField = new EndPointField(destination, "name");
     sourceEndPointFields = incomingSummary.get(endPointField);
     Assert.assertEquals(1, sourceEndPointFields.size());
     expectedEndPointField = new EndPointField(EndPoint.of("endpoint1"), "body");
     Assert.assertEquals(expectedEndPointField, sourceEndPointFields.iterator().next());
+
+    incomingOperationsForField = info.getIncomingOperationsForField(endPointField);
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new ReadOperation(read.getName(), read.getDescription(), read.getSource(), "body"));
+    expectedOperations.add(parse);
+    expectedOperations.add(concat);
+    expectedOperations.add(new WriteOperation(write.getName(), write.getDescription(), write.getDestination(),
+                                              InputField.of("concat", "name")));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(incomingOperationsForField));
 
     // test outgoing summaries
 
@@ -236,12 +252,28 @@ public class FieldLineageInfoTest {
     expectedEndPointField = new EndPointField(EndPoint.of("myns", "another_file"), "offset");
     Assert.assertEquals(expectedEndPointField, destinationEndPointFields.iterator().next());
 
+    Set<Operation> outgoingOperationsFromField = info.getOutgoingOperationsFromField(endPointField);
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new ReadOperation(read.getName(), read.getDescription(), read.getSource(), "offset"));
+    expectedOperations.add(new WriteOperation(write.getName(), write.getDescription(), write.getDestination(),
+                           InputField.of(read.getName(), "offset")));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(outgoingOperationsFromField));
+
     // body in the source should only affect the field name in the destination
     endPointField = new EndPointField(source, "body");
     destinationEndPointFields = outgoingSummary.get(endPointField);
     Assert.assertEquals(1, destinationEndPointFields.size());
     expectedEndPointField = new EndPointField(EndPoint.of("myns", "another_file"), "name");
     Assert.assertEquals(expectedEndPointField, destinationEndPointFields.iterator().next());
+
+    outgoingOperationsFromField = info.getOutgoingOperationsFromField(endPointField);
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new ReadOperation(read.getName(), read.getDescription(), read.getSource(), "body"));
+    expectedOperations.add(parse);
+    expectedOperations.add(concat);
+    expectedOperations.add(new WriteOperation(write.getName(), write.getDescription(), write.getDestination(),
+            InputField.of("concat", "name")));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(outgoingOperationsFromField));
   }
 
   @Test
@@ -303,6 +335,14 @@ public class FieldLineageInfoTest {
     expectedSet.add(new EndPointField(location, "zip"));
     Assert.assertEquals(4, outgoingSummary.get(new EndPointField(source, "body")).size());
     Assert.assertEquals(expectedSet, outgoingSummary.get(new EndPointField(source, "body")));
+
+    Set<Operation> outgoingOperations = fllInfo.getOutgoingOperationsFromField(new EndPointField(source, "body"));
+    Set<Operation> expectedOperations = new HashSet<>();
+    expectedOperations.add(new ReadOperation(read.getName(), read.getDescription(), source, "body"));
+    expectedOperations.add(parse);
+    expectedOperations.add(infoWrite);
+    expectedOperations.add(locationWrite);
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(outgoingOperations));
   }
 
   @Test
@@ -395,6 +435,82 @@ public class FieldLineageInfoTest {
     expectedSet.add(new EndPointField(sEndPoint, "id"));
     // id field of cEndPoint only affects id field of secure endpoint
     Assert.assertEquals(expectedSet, outgoingSummary.get(new EndPointField(cEndPoint, "id")));
+
+    // Test incoming operations from all destination fields
+
+    // pRead: personFile -> (offset, body)
+    // parse: body -> (id, name, address)
+    // cRead: codeFile -> id
+    // codeGen: (parse.id, cRead.id) -> id
+    // sWrite: (codeGen.id, parse.name, parse.address) -> secureStore
+    // iWrite: (parse.id, parse.name, parse.address) -> insecureStore
+
+    Set<Operation> inComingOperations = fllInfo.getIncomingOperationsForField(new EndPointField(iEndPoint, "id"));
+    Set<Operation> expectedOperations = new HashSet<>();
+    expectedOperations.add(new WriteOperation(iWrite.getName(), iWrite.getDescription(), iWrite.getDestination(),
+                                              InputField.of(parse.getName(), "id")));
+    expectedOperations.add(new TransformOperation(parse.getName(), parse.getDescription(), parse.getInputs(), "id"));
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(inComingOperations));
+
+    inComingOperations = fllInfo.getIncomingOperationsForField(new EndPointField(iEndPoint, "name"));
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new WriteOperation(iWrite.getName(), iWrite.getDescription(), iWrite.getDestination(),
+            InputField.of(parse.getName(), "name")));
+    expectedOperations.add(new TransformOperation(parse.getName(), parse.getDescription(), parse.getInputs(), "name"));
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(inComingOperations));
+
+    inComingOperations = fllInfo.getIncomingOperationsForField(new EndPointField(iEndPoint, "address"));
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new WriteOperation(iWrite.getName(), iWrite.getDescription(), iWrite.getDestination(),
+            InputField.of(parse.getName(), "address")));
+    expectedOperations.add(new TransformOperation(parse.getName(), parse.getDescription(), parse.getInputs(),
+                           "address"));
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(inComingOperations));
+
+    inComingOperations = fllInfo.getIncomingOperationsForField(new EndPointField(sEndPoint, "id"));
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new WriteOperation(sWrite.getName(), sWrite.getDescription(), sWrite.getDestination(),
+            InputField.of(codeGen.getName(), "id")));
+    expectedOperations.add(codeGen);
+    expectedOperations.add(new ReadOperation(cRead.getName(), cRead.getDescription(), cRead.getSource(), "id"));
+    expectedOperations.add(new TransformOperation(parse.getName(), parse.getDescription(), parse.getInputs(), "id"));
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(inComingOperations));
+
+    inComingOperations = fllInfo.getIncomingOperationsForField(new EndPointField(sEndPoint, "name"));
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new WriteOperation(sWrite.getName(), sWrite.getDescription(), sWrite.getDestination(),
+            InputField.of(parse.getName(), "name")));
+    expectedOperations.add(new TransformOperation(parse.getName(), parse.getDescription(), parse.getInputs(), "name"));
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(inComingOperations));
+
+    inComingOperations = fllInfo.getIncomingOperationsForField(new EndPointField(sEndPoint, "address"));
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new WriteOperation(sWrite.getName(), sWrite.getDescription(), sWrite.getDestination(),
+            InputField.of(parse.getName(), "address")));
+    expectedOperations.add(new TransformOperation(parse.getName(), parse.getDescription(), parse.getInputs(),
+            "address"));
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(inComingOperations));
+
+    // Test outgoing operations
+    Set<Operation> outgoingOperations = fllInfo.getOutgoingOperationsFromField(new EndPointField(pEndPoint, "body"));
+    expectedOperations = new HashSet<>();
+    expectedOperations.add(new ReadOperation(pRead.getName(), pRead.getDescription(), pRead.getSource(), "body"));
+    expectedOperations.add(parse);
+    expectedOperations.add(new TransformOperation(codeGen.getName(), codeGen.getDescription(),
+            Collections.singletonList(InputField.of(parse.getName(), "id")), "id"));
+    expectedOperations.add(new WriteOperation(sWrite.getName(), sWrite.getDescription(), sWrite.getDestination(),
+            InputField.of(codeGen.getName(), "id"), InputField.of(parse.getName(), "name"),
+            InputField.of(parse.getName(), "address")));
+    expectedOperations.add(new WriteOperation(iWrite.getName(), iWrite.getDescription(), iWrite.getDestination(),
+            InputField.of(parse.getName(), "id"), InputField.of(parse.getName(), "name"),
+            InputField.of(parse.getName(), "address")));
+    Assert.assertEquals(new FieldLineageInfo(expectedOperations), new FieldLineageInfo(outgoingOperations));
   }
 
   @Test
